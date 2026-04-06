@@ -8,16 +8,34 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = pkgs.linuxPackages_latest;
-  
+  boot.kernelParams = [ "lockdown=integrity" ];
   boot.initrd.luks.devices."cryptroot" = {
   device = "/dev/disk/by-uuid/1780dd9f-1284-453a-b21e-b42fc158b0c8";
   preLVM = true;
 };
   # ── Networking ────────────────────────────────────────────────────────────
   networking.hostName = "nix-btw";
-  networking.networkmanager.enable = true;
   networking.firewall.enable = true;
- 
+  networking.networkmanager = {
+    enable = true;
+    wifi.macAddress = "random";
+    ethernet.macAddress = "random";
+  };
+  # ── Security ──────────────────────────────────────────────────────────────
+  security.sudo.wheelNeedsPassword = true;
+  swapDevices = [{
+  device = "/dev/disk/by-partuuid/a4c7f1de-3484-4677-87db-6781fe959358";
+  randomEncryption.enable = true;
+}]; 
+systemd.coredump.enable = false;
+
+boot.kernel.sysctl = {
+  "kernel.yama.ptrace_scope"  = 2;
+  "kernel.kptr_restrict"      = 2;
+  "kernel.dmesg_restrict"     = 1;
+  "net.core.bpf_jit_harden"   = 2;
+};
+
   # ── GPU ───────────────────────────────────────────────────────────────────
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.stable;
@@ -26,12 +44,17 @@
   hardware.graphics.enable = true;
 
   # ── Desktop ───────────────────────────────────────────────────────────────
-  services.xserver.enable = true;
   services.displayManager.ly.enable = true;
   services.displayManager.defaultSession = "hyprland";
   programs.hyprland.enable = true;
   security.polkit.enable = true;
-
+  services.fail2ban.enable = true;
+  security.apparmor.enable = true;
+  nix.gc = {
+  automatic = true;
+  dates = "weekly";
+  options = "--delete-older-than 30d";
+};
   # ── Bluetooth ─────────────────────────────────────────────────────────────
   hardware.bluetooth.enable = true;
   services.blueman.enable = true;
@@ -54,7 +77,7 @@
   # ── Users ─────────────────────────────────────────────────────────────────
   users.users.oxy = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "docker" "kvm" ];
+    extraGroups = [ "wheel" "docker" ];
     shell = pkgs.zsh;
   };
 
@@ -81,19 +104,20 @@ services.tor = {
     ClientUseIPv6 = false;
     UseBridges = true;
     ClientTransportPlugin = "obfs4 exec ${pkgs.obfs4}/bin/lyrebird";
-    Bridge = [
-      "obfs4 67.205.142.190:9889 656C06D42A01D25138F2F52E459C6DC27B209F73 cert=Y8MM/9CEGC7PshNot9XYQQncWugSGeu/p6hbvNOsU1zl2U4TL50l4OBzyOhD6dLw4LVMSw iat-mode=0"
-      "obfs4 73.194.176.110:4040 F30BC0BF1C7FAE8E03E2C6C8A4A253567AA3F101 cert=ah2ALRB5FgksHnlAeqLsc8Pa33jLtk//xLi5oVNNMPCePmMujp6RXUlNMR7zpjAsSKirEw iat-mode=0"
-    ];
+    "%include" = "/etc/tor/bridges.conf";
   };
 };
 systemd.services.tor.serviceConfig = {
-    NoNewPrivileges = lib.mkForce false;
     ProtectProc = lib.mkForce "default";
     RestrictAddressFamilies = lib.mkForce [ "AF_UNIX" "AF_INET" "AF_INET6" "AF_NETLINK" ];
     CapabilityBoundingSet = lib.mkForce [ "CAP_NET_BIND_SERVICE" "CAP_SETUID" "CAP_SETGID" ];
+    ReadWritePaths = [ "/etc/tor" ];
   };
 
+
+systemd.tmpfiles.rules = [
+  "d /etc/tor 0750 tor tor -"
+];
 
   programs.proxychains = {
   enable = true;

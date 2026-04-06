@@ -236,6 +236,7 @@ programs.zsh = {
 
   shellAliases = {
   proxy-on = "export http_proxy=http://127.0.0.1:8118 https_proxy=http://127.0.0.1:8118 all_proxy=http://127.0.0.1:8118";
+  proxy-off = "unset http_proxy https_proxy all_proxy";
   };
 };
 
