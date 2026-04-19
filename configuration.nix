@@ -19,7 +19,7 @@
   networking.networkmanager = {
     enable = true;
     wifi.macAddress = "random";
-    ethernet.macAddress = "random";
+    ethernet.macAddress = "stable";
   };
   # ── Security ──────────────────────────────────────────────────────────────
   security.sudo.wheelNeedsPassword = true;
@@ -50,6 +50,18 @@ boot.kernel.sysctl = {
   security.polkit.enable = true;
   services.fail2ban.enable = true;
   security.apparmor.enable = true;
+ ###
+  networking.firewall.allowedTCPPortRanges = [
+    { from = 1714; to = 1764; }
+  ];
+  networking.firewall.allowedUDPPortRanges = [
+  { from = 1714; to = 1764; }
+  ];
+
+
+
+  programs.kdeconnect.enable = true;
+###
   nix.gc = {
   automatic = true;
   dates = "weekly";
