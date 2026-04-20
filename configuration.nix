@@ -106,7 +106,11 @@ boot.kernel.sysctl = {
   nixpkgs.config.allowUnfree = true;
   programs.zsh.enable = true;
   services.flatpak.enable = true;
+  programs.appimage = {
+  enable = true;
+  binfmt = true;
 
+};
   # ── Tor ───────────────────────────────────────────────────────────────────
 services.tor = {
   enable = true;
@@ -155,6 +159,7 @@ systemd.tmpfiles.rules = [
   # ── Packages ──────────────────────────────────────────────────────────────
   environment.systemPackages = with pkgs; [
     # Core utils
+    gearlever
     vim
     wget
     curl
